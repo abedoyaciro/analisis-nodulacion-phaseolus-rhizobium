@@ -65,25 +65,54 @@ analisis-nodulacion-phaseolus-rhizobium/
 
 ---
 
-## 🧩 Requisitos
+## 🔁 Reproducibilidad con 'renv'
 
-Puedes instalar los paquetes necesarios ejecutando:
+Este proyecto utiliza el paquete 'renv' para asegurar un entorno reproducible. Esto significa que todas las versiones de los paquetes usados en el análisis están registradas en el archivo 'renv.lock'.
+
+### 📦 ¿Qué hace 'renv'?
+
+- Registra los paquetes usados y sus versiones exactas.
+- Crea un entorno aislado en la carpeta '/renv/'.
+- Permite restaurar el entorno en cualquier equipo o momento.
+
+### 🛠 Cómo usarlo
+
+#### 🟢 1. Instalar 'renv' (una sola vez)
+
+Si aún no tienes el paquete instalado:
 
 ```r
-install.packages(c("tidyverse", "ggpubr", "rstatix", "DataExplorer", "gt", "patchwork"))
+install.packages("renv")
 ```
 
----
+#### 🔄 2. Restaurar el entorno del proyecto
 
-## 🧪 Reproducibilidad
+Desde R o RStudio, estando en la raíz del proyecto, ejecuta:
 
-Para asegurar la reproducibilidad, puedes instalar todos los paquetes necesarios y luego abrir:
+```r
+renv::restore()
+```
+
+Esto instalará automáticamente todos los paquetes usados con las versiones que estaban activas cuando se generó el análisis.
+
+#### 🧪 3. Ejecutar el análisis
+
+Una vez restaurado el entorno, abre el archivo:
 
 ```bash
 scripts/analisis_nodulacion.Rmd
 ```
 
-Desde RStudio, selecciona **Knit to HTML** para generar una versión web del análisis.
+Y compílalo usando:
+
+```r
+rmarkdown::render("scripts/analisis_nodulacion.Rmd", output_file = "../docs/index.html")
+```
+
+---
+
+💡 Tip: El archivo '.Rprofile' ya incluye 'renv::activate()' para que el entorno se active automáticamente al abrir el proyecto.
+
 
 ---
 
