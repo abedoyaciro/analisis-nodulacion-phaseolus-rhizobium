@@ -31,7 +31,7 @@ Este proyecto es un estudio de bioestadística aplicada que analiza la capacidad
 ```
 analisis-nodulacion-phaseolus-rhizobium/
 ├── data/             # Datos experimentales (CSV original del experimento)
-│   └── TALLER_2_Unidad_1.csv
+│   └── nodulacion_rhizobium.csv
 ├── scripts/          # Documento RMarkdown y scripts auxiliares
 │   ├── analisis_nodulacion.Rmd
 │   └── save_docs.R
@@ -84,15 +84,6 @@ scripts/analisis_nodulacion.Rmd
 ```
 
 Desde RStudio, selecciona **Knit to HTML** para generar una versión web del análisis.
-
----
-
-## 🌐 ¿Y si quiero publicarlo como sitio web?
-
-- Compila el `.Rmd` como HTML (`Knit to HTML`).
-- Crea una carpeta `/docs/` en el repositorio y mueve allí el `.html`.
-- Activa GitHub Pages desde la configuración del repo → *Source: `/docs` folder*.
-- ¡Listo! Tu informe estará disponible como página web.
 
 ---
 
