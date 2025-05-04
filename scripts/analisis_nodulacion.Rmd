@@ -5,9 +5,16 @@ date: "`r Sys.Date()`"
 output:
   html_document:
     toc: true
-    toc_depth: 3
+    toc_depth: 2
     toc_float: true
+    number_sections: true
     theme: flatly
+    highlight: tango
+    df_print: paged
+    code_folding: hide
+    includes:
+      after_body: "footer.html"
+    css: "custom.css"
     knit: "save_docs.R"
 ---
 
@@ -17,13 +24,13 @@ La fijación biológica de nitrógeno mediante bacterias del género *Rhizobium*
 
 ------------------------------------------------------------------------
 
-# 1. Hipótesis científica
+# Hipótesis científica
 
 Se plantea que la inoculación de *Phaseolus vulgaris* con la cepa Rhizobium sp., aplicada en concentraciones de 1×10⁶ y 1×10⁸ UFC/mL, favorece la formación de nódulos activos en las raíces de la planta. Se espera observar una mayor cantidad de nódulos en los tratamientos con bacteria, en comparación con las plantas que no reciben inoculación (grupo control), lo cual indicaría un efecto positivo del microorganismo sobre la nodulación en condiciones controladas.
 
 ------------------------------------------------------------------------
 
-# 2. Exploración inicial de los datos (.csv)
+#  Exploración inicial de los datos (.csv)
 
 Antes de proceder con la carga del archivo `.csv` en R, se revisó de forma preliminar la estructura de los datos. El archivo contiene información sobre:
 
@@ -38,7 +45,7 @@ Esta observación sugiere que **la aplicación del microorganismo podría estar 
 
 ------------------------------------------------------------------------
 
-# 3. Carga de paquetes necesarios
+#  Carga de paquetes necesarios
 
 Se realiza la verificación de los paquetes requeridos uno por uno. Si algún paquete no está instalado, se instalará automáticamente. Posteriormente, se cargan todos los paquetes necesarios.
 
@@ -61,7 +68,7 @@ Estos paquetes permiten realizar tareas de importación y manipulación de datos
 
 ------------------------------------------------------------------------
 
-# 4. Carga de los datos en R y generación del vector
+#  Carga de los datos en R y generación del vector
 
 Se procede a cargar el archivo `.csv` que contiene los datos experimentales sobre el número de nódulos activos en *Phaseolus vulgaris* bajo distintos tratamientos con *Rhizobium sp.*. La base de datos incluye tres pseudoréplicas por pote, lo que se reflejará en múltiples filas por unidad experimental.
 
@@ -85,7 +92,7 @@ head(nodulos)
 
 ------------------------------------------------------------------------
 
-# 5. Identificación de variables: tipo y naturaleza
+#  Identificación de variables: tipo y naturaleza
 
 Se identifican las variables presentes en el conjunto de datos, clasificándolas como **dependientes o independientes**, y determinando su naturaleza (cuantitativa continua, discreta o cualitativa nominal u ordinal), se identifican las siguientes variables:
 
@@ -96,7 +103,7 @@ Se identifican las variables presentes en el conjunto de datos, clasificándolas
 
 ------------------------------------------------------------------------
 
-# 6. Revisión de la estructura de los datos
+#  Revisión de la estructura de los datos
 
 Se utiliza la función `str()` para revisar cómo R ha interpretado internamente las variables del conjunto de datos.
 
@@ -127,7 +134,7 @@ str(datos)
 
 ------------------------------------------------------------------------
 
-# 7. Promedio de pseudoréplicas por pote y vectorización del subset
+#  Promedio de pseudoréplicas por pote y vectorización del subset
 
 Los datos registrados corresponden a pseudoréplicas técnicas (tres plántulas por pote). Para obtener una medida representativa por unidad experimental (UE), se realiza el promedio del número de nódulos por pote y tratamiento. Esto se realiza usando el paquete `dplyr`.
 
@@ -170,7 +177,7 @@ A partir de este punto, todos los análisis se realizan sobre el dataset `datos_
 
 ------------------------------------------------------------------------
 
-# 8. Análisis exploratorio con `summary()` y validación de los datos
+#  Análisis exploratorio con `summary()` y validación de los datos
 
 Se utiliza la función `summary()` para obtener una visión general de los valores promediados del número de nódulos activos por pote, agrupados previamente por tratamiento. Esto permite verificar que los datos fueron correctamente agregados y que no se presentan valores atípicos evidentes, errores de codificación ni valores perdidos.
 
@@ -197,7 +204,7 @@ El amplio rango entre mínimo y máximo (54 a 243) también refuerza la necesida
 
 ------------------------------------------------------------------------
 
-# 9. Evaluación de datos perdidos y balance experimental
+#  Evaluación de datos perdidos y balance experimental
 
 Se utiliza el paquete `DataExplorer` para verificar:
 
@@ -221,7 +228,7 @@ plot_bar(select(datos_promediados, with = "Tratamiento"))
 
 ------------------------------------------------------------------------
 
-# 10. Visualización de la distribución de los datos
+#  Visualización de la distribución de los datos
 
 Para explorar cómo se distribuyen los valores promediados de nódulos por pote, se construyen gráficos de densidad y/o histogramas usando `ggplot2`. Se analiza la distribución global y segmentada por tratamiento.
 
@@ -257,7 +264,7 @@ ggplot(datos_promediados, aes(x = Nodulos_prom, fill = Tratamiento)) +
 
 ------------------------------------------------------------------------
 
-# 11. Diagramas de barras con dispersión: SD vs SE
+#  Diagramas de barras con dispersión: SD vs SE
 
 Se comparan dos formas de representar la dispersión de los datos: **desviación estándar (SD)** y **error estándar (SE)**. En ambos casos se muestran las medias por tratamiento, acompañadas por las medidas de dispersión respectivas y los valores individuales (promedios por pote) con jitter.
 
@@ -321,7 +328,7 @@ Para este tipo de experimento, cuyo objetivo es **comparar las medias entre trat
 
 ------------------------------------------------------------------------
 
-# 12. Tabla de estadísticos descriptivos por tratamiento
+#  Tabla de estadísticos descriptivos por tratamiento
 
 Se generan estadísticas descriptivas agrupadas por tratamiento, utilizando la función `desc_statby()` del paquete `ggpubr`. Esta función permite obtener medidas de tendencia central, dispersión y posición para la variable `Nodulos_prom`, correspondiente al número promedio de nódulos por pote.
 
@@ -353,7 +360,7 @@ tabla_estadistica %>%
 
 ------------------------------------------------------------------------
 
-# 13. Análisis de la media, mediana, desviación estándar y varianza
+#  Análisis de la media, mediana, desviación estándar y varianza
 
 A partir de los resultados obtenidos en la tabla de estadísticos descriptivos, se analiza el comportamiento de cada tratamiento en cuanto a tendencia central y dispersión.
 
@@ -380,7 +387,7 @@ Los tratamientos con *Rhizobium sp.* presentan medias mucho más altas que el co
 
 ------------------------------------------------------------------------
 
-# 14. Boxplot con jitter y media
+#  Boxplot con jitter y media
 
 A continuación, se construye una figura tipo boxplot con `ggplot2` que incluye:
 
@@ -423,7 +430,7 @@ Por lo tanto, este gráfico no solo confirma visualmente los patrones estadísti
 
 ------------------------------------------------------------------------
 
-# 15. Identificación de outliers
+#  Identificación de outliers
 
 Se analiza la presencia de posibles datos atípicos (outliers) mediante inspección visual del boxplot (punto 14) y uso de la función `identify_outliers()` del paquete `rstatix`.
 
@@ -463,7 +470,7 @@ Dado que:
 
 ------------------------------------------------------------------------
 
-# 16. Conclusión frente a la hipótesis científica
+#  Conclusión frente a la hipótesis científica
 
 A partir de todos los análisis realizados, se concluye que los datos respaldan la hipótesis científica planteada inicialmente:
 
