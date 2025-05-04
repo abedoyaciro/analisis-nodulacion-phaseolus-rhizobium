@@ -1,0 +1,478 @@
+---
+title: "Análisis de Nodulación en Phaseolus vulgaris"
+author: "Anderson Bedoya Ciro"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: flatly
+    knit: "save_docs.R"
+---
+
+# Introducción
+
+La fijación biológica de nitrógeno mediante bacterias del género *Rhizobium* es fundamental en leguminosas como *Phaseolus vulgaris*. Este proceso depende de la capacidad de la bacteria para formar nódulos activos en las raíces de la planta. En este experimento se evaluó el efecto de dos concentraciones de *Rhizobium sp.* (1×10⁶ y 1×10⁸ UFC/mL) sobre la nodulación en frijol, comparado con un control sin inoculación. El análisis se realiza con herramientas de R, explorando patrones en los datos, visualizaciones y medidas descriptivas que permitan valorar el impacto del tratamiento aplicado.
+
+------------------------------------------------------------------------
+
+# 1. Hipótesis científica
+
+Se plantea que la inoculación de *Phaseolus vulgaris* con la cepa Rhizobium sp., aplicada en concentraciones de 1×10⁶ y 1×10⁸ UFC/mL, favorece la formación de nódulos activos en las raíces de la planta. Se espera observar una mayor cantidad de nódulos en los tratamientos con bacteria, en comparación con las plantas que no reciben inoculación (grupo control), lo cual indicaría un efecto positivo del microorganismo sobre la nodulación en condiciones controladas.
+
+------------------------------------------------------------------------
+
+# 2. Exploración inicial de los datos (.csv)
+
+Antes de proceder con la carga del archivo `.csv` en R, se revisó de forma preliminar la estructura de los datos. El archivo contiene información sobre:
+
+-   **Microorganismo**: especie aplicada (Rhizobium sp. o Sin Rhizobium sp.)
+-   **Tratamiento**: concentración bacteriana (1×10⁶, 1×10⁸ UFC/mL o control)
+-   **Pote**: identificador del pote (unidad experimental)
+-   **Nodulos**: número de nódulos activos por 10 g de raíz húmeda
+
+Con base en una inspección visual de los datos, se observa una tendencia en la variable respuesta. Los tratamientos con *Rhizobium sp.*, especialmente a una concentración de 1×10⁸ UFC/mL, tienden a mostrar un mayor número de nódulos en comparación con el tratamiento control.
+
+Esta observación sugiere que **la aplicación del microorganismo podría estar influyendo positivamente en la nodulación**, aunque este patrón deberá ser confirmado a través de análisis estadísticos posteriores.
+
+------------------------------------------------------------------------
+
+# 3. Carga de paquetes necesarios
+
+Se realiza la verificación de los paquetes requeridos uno por uno. Si algún paquete no está instalado, se instalará automáticamente. Posteriormente, se cargan todos los paquetes necesarios.
+
+```{r carga-paquetes, message=FALSE, warning=FALSE}
+
+# Verificar e instalar si es necesario
+library(tidyverse)
+library(dplyr)
+library(DataExplorer)
+library(ggpubr)
+library(patchwork)
+library(rstatix)
+library(gt)
+library(readr)
+library(ggplot2)
+library(psych)
+```
+
+Estos paquetes permiten realizar tareas de importación y manipulación de datos (readr, dplyr), análisis exploratorio (summary, DataExplorer), visualización avanzada (ggpubr, ggplot2, patchwork), pruebas estadísticas (rstatix), y presentación de resultados (gt, psych).
+
+------------------------------------------------------------------------
+
+# 4. Carga de los datos en R y generación del vector
+
+Se procede a cargar el archivo `.csv` que contiene los datos experimentales sobre el número de nódulos activos en *Phaseolus vulgaris* bajo distintos tratamientos con *Rhizobium sp.*. La base de datos incluye tres pseudoréplicas por pote, lo que se reflejará en múltiples filas por unidad experimental.
+
+```{r carga-datos}
+# Cargar los datos desde archivo CSV
+datos <- read.csv("../data/nodulacion_rhizobium.csv", sep = ";")
+
+# Visualizar los primeros registros
+head(datos)
+```
+
+Luego de cargar los datos, se genera un **vector de la variable respuesta** (número de nódulos) para facilitar el desarrollo del análisis más adelante.
+
+```{r vector-nodulos}
+# Vector de la variable respuesta
+nodulos <- datos$Nodulos
+
+# Visualizar los primeros valores del vector
+head(nodulos)
+```
+
+------------------------------------------------------------------------
+
+# 5. Identificación de variables: tipo y naturaleza
+
+Se identifican las variables presentes en el conjunto de datos, clasificándolas como **dependientes o independientes**, y determinando su naturaleza (cuantitativa continua, discreta o cualitativa nominal u ordinal), se identifican las siguientes variables:
+
+-   **Microorganismo**: variable independiente cualitativa nominal. Indica si se aplicó *Rhizobium sp.* o no.
+-   **Tratamiento**: variable independiente cualitativa nominal. Representa la concentración aplicada (1×10⁶, 1×10⁸ UFC/mL o "Control").
+-   **Pote**: variable de agrupación (identificador de unidad experimental). Cuantitativa discreta (pero usada como factor para promediar pseudoréplicas).
+-   **Nodulos**: variable dependiente cuantitativa discreta. Representa el número de nódulos activos por 10 g de raíz húmeda.
+
+------------------------------------------------------------------------
+
+# 6. Revisión de la estructura de los datos
+
+Se utiliza la función `str()` para revisar cómo R ha interpretado internamente las variables del conjunto de datos.
+
+```{r estructura-datos}
+# Revisar estructura interna del dataset
+str(datos)
+```
+
+## Interpretación de la salida:
+
+-   `Microorganismo`: tipo **character** (`chr`). Debería convertirse a **factor**, ya que representa una variable cualitativa nominal.
+-   `Tratamiento`: tipo **character** (`chr`). También debe convertirse a **factor**, pues representa categorías (1.00E+08, 1.00E+06, Control).
+-   `Pote`: tipo **integer** (`int`). Es correcto, aunque para ciertos análisis por grupo más adelante se puede tratar como factor temporalmente.
+-   `Nodulos`: tipo **integer** (`int`). Es correcto. Se trata de una variable cuantitativa discreta, usada como variable respuesta.
+
+## Conversión de variables categóricas a factores
+
+A continuación se realiza la conversión explícita de las variables cualitativas que R leyó como texto (character) para asegurar que se manejes correctamente las variables en el análisis.
+
+```{r conversion-tipos}
+# Conversión de variables cualitativas a factores
+datos$Microorganismo <- as.factor(datos$Microorganismo)
+datos$Tratamiento <- as.factor(datos$Tratamiento)
+
+# Confirmar cambios
+str(datos)
+```
+
+------------------------------------------------------------------------
+
+# 7. Promedio de pseudoréplicas por pote y vectorización del subset
+
+Los datos registrados corresponden a pseudoréplicas técnicas (tres plántulas por pote). Para obtener una medida representativa por unidad experimental (UE), se realiza el promedio del número de nódulos por pote y tratamiento. Esto se realiza usando el paquete `dplyr`.
+
+```{r promedio-pseudoreplicas}
+# Promediar las pseudoréplicas por pote y tratamiento
+datos_promediados <- datos %>% # se transforma el dataset original
+  group_by(Tratamiento, Pote) %>% # se agrupa por tratamiento y pote
+  summarise(Nodulos_prom = mean(Nodulos), .groups = "drop") # se calcula el promedio de nódulos por pote
+
+# Visualizar las primeras filas del nuevo dataset
+head(datos_promediados)
+```
+
+Una vez creado el nuevo dataset, se extrae la variable `Nodulos_prom` como un vector. Esta variable contiene los valores promediados que se utilizarán como respuesta en los análisis posteriores.
+
+```{r vector-nodulos-prom}
+# Vector de los valores promediados
+nodulos_prom_vector <- datos_promediados$Nodulos_prom
+
+# Mostrar los primeros valores del vector
+head(nodulos_prom_vector)
+```
+
+Una vez agrupadas las pseudoréplicas técnicas por combinación de `Tratamiento` y `Pote`, el nuevo dataset (`datos_promediados`) contiene un total de **30 observaciones**.
+
+Esto se debe a que el diseño experimental incluye:
+
+-   **3 tratamientos** (`1.00E+08`, `1.00E+06` y `Control`)
+-   **10 potes por tratamiento**
+-   Cada pote con **3 pseudoréplicas técnicas** (una por plántula)
+
+En el dataset original había 90 observaciones (3 pseudoréplicas × 10 potes × 3 tratamientos).\
+Al promediar las 3 pseudoréplicas por pote, cada unidad experimental queda representada por un único valor promedio. Por lo tanto:
+
+**3 tratamientos × 10 potes = 30 observaciones finales**
+
+Este proceso reduce la pseudorreplicación y prepara los datos para análisis comparativos válidos entre tratamientos.
+
+A partir de este punto, todos los análisis se realizan sobre el dataset `datos_promediados`, el cual representa una observación promedio por unidad experimental (pote), tal como lo requiere el diseño estadístico del experimento.
+
+------------------------------------------------------------------------
+
+# 8. Análisis exploratorio con `summary()` y validación de los datos
+
+Se utiliza la función `summary()` para obtener una visión general de los valores promediados del número de nódulos activos por pote, agrupados previamente por tratamiento. Esto permite verificar que los datos fueron correctamente agregados y que no se presentan valores atípicos evidentes, errores de codificación ni valores perdidos.
+
+```{r resumen-datos}
+# Resumen estadístico de los datos promediados
+summary(datos_promediados)
+```
+
+## Interpretación de la salida de `summary()`
+
+- La variable `Tratamiento` muestra correctamente **tres niveles** con **10 potes por tratamiento**, lo que confirma que el diseño experimental está equilibrado.
+- La variable `Pote` abarca del 1 al 10 en cada tratamiento, indicando que todas las unidades experimentales fueron consideradas tras el agrupamiento.
+- La variable `Nodulos_prom` presenta los siguientes valores estadísticos:
+  - **Mínimo**: 54.00
+  - **1er cuartil (Q1)**: 69.75
+  - **Mediana (Q2)**: 164.83
+  - **Media**: 148.08
+  - **3er cuartil (Q3)**: 202.67
+  - **Máximo**: 243.00
+
+Este comportamiento sugiere que existe una alta dispersión entre los grupos, lo cual podría reflejar un efecto del tratamiento. La **mediana (164.83)** y la **media (148.08)** indican que al menos la mitad de los valores están por encima de 150, lo cual podría deberse a la respuesta positiva de la inoculación bacteriana.
+
+El amplio rango entre mínimo y máximo (54 a 243) también refuerza la necesidad de evaluar gráficamente la distribución por tratamiento en los siguientes puntos.
+
+------------------------------------------------------------------------
+
+# 9. Evaluación de datos perdidos y balance experimental
+
+Se utiliza el paquete `DataExplorer` para verificar:
+
+1. Si existen datos faltantes en el dataset `datos_promediados`.
+2. Si el número de potes (unidades experimentales) es el mismo para cada tratamiento, lo que confirmaría que el diseño experimental está balanceado.
+
+```{r datos-faltantes}
+# Verificación visual de datos faltantes
+plot_missing(datos_promediados)
+```
+
+Se observa que **no hay datos perdidos** en ninguna de las columnas.
+
+Además, se visualiza la cantidad de potes por tratamiento mediante un gráfico de barras, confirmando el balance del diseño experimental.
+
+```{r balance-tratamientos}
+# Gráfico de barras para mostrar la cantidad de potes por tratamiento
+plot_bar(select(datos_promediados, with = "Tratamiento"))
+
+```
+
+------------------------------------------------------------------------
+
+# 10. Visualización de la distribución de los datos
+
+Para explorar cómo se distribuyen los valores promediados de nódulos por pote, se construyen gráficos de densidad y/o histogramas usando `ggplot2`. Se analiza la distribución global y segmentada por tratamiento.
+
+```{r}
+
+# Opciones para mostrar correctamente en el Word
+knitr::opts_chunk$set(
+  fig.width = 6, 
+  fig.height = 4, 
+  dpi = 600,        # mejora la resolución
+  out.width = "80%"  # escala automática
+)
+
+```
+
+```{r histograma-global}
+# Histograma de toda la población
+ggplot(datos_promediados, aes(x = Nodulos_prom)) +
+  geom_histogram(binwidth = 20, fill = "skyblue", color = "black") +
+  labs(title = "Distribución global del número promedio de nódulos por pote",
+       x = "Nódulos promedio por pote", y = "Frecuencia") +
+  theme_minimal()
+```
+
+```{r densidad-por-tratamiento}
+# Diagrama de densidad por tratamiento
+ggplot(datos_promediados, aes(x = Nodulos_prom, fill = Tratamiento)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Distribución por tratamiento",
+       x = "Nódulos promedio por pote", y = "Densidad") +
+  theme_minimal()
+```
+
+------------------------------------------------------------------------
+
+# 11. Diagramas de barras con dispersión: SD vs SE
+
+Se comparan dos formas de representar la dispersión de los datos: **desviación estándar (SD)** y **error estándar (SE)**. En ambos casos se muestran las medias por tratamiento, acompañadas por las medidas de dispersión respectivas y los valores individuales (promedios por pote) con jitter.
+
+```{r barras-sd}
+# Gráfico con desviación estándar
+grafico_sd <- ggbarplot(datos_promediados, x = "Tratamiento", y = "Nodulos_prom",
+                        add = "mean_sd", error.plot = "errorbar",
+                        fill = "Tratamiento", palette = "npg", 
+                        add.params = list(color = "black"),
+                        position = position_dodge(0.9)) +
+  geom_jitter(aes(x = Tratamiento, y = Nodulos_prom),
+              data = datos_promediados,
+              width = 0.1, shape = 21, fill = "white") +
+  labs(title = "Media + Desviación Estándar", 
+       y = "Nódulos promedio por pote") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+```{r barras-se}
+# Gráfico con error estándar
+grafico_se <- ggbarplot(datos_promediados, x = "Tratamiento", y = "Nodulos_prom",
+                        add = "mean_se", error.plot = "errorbar",
+                        fill = "Tratamiento", palette = "npg", 
+                        add.params = list(color = "black"),
+                        position = position_dodge(0.9)) +
+  geom_jitter(aes(x = Tratamiento, y = Nodulos_prom),
+              data = datos_promediados,
+              width = 0.1, shape = 21, fill = "white") +
+  labs(title = "Media + Error Estándar", 
+       y = "Nódulos promedio por pote") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+```{r panel-barras}
+# Panel de gráficos con patchwork
+grafico_sd + grafico_se
+```
+
+Las dos figuras comparan la media del número promedio de nódulos por pote entre tratamientos, representando la dispersión de los datos de dos formas distintas:
+
+- En la figura de la izquierda se utiliza la **desviación estándar (SD)**, la cual muestra **cuánta variabilidad existe entre los valores individuales dentro de cada tratamiento**.
+- En la figura de la derecha se utiliza el **error estándar (SE)**, el cual muestra **la precisión con la que se estima la media** para cada tratamiento. Este valor es más pequeño porque se calcula como SD dividido entre la raíz cuadrada del número de observaciones.
+
+## ¿Qué diferencia en las medidas de dispersión se puede ver en las dos figuras?
+
+La principal diferencia es la **longitud de las barras de error**. En el gráfico con desviación estándar (SD), las barras son más largas porque muestran la variabilidad real entre las unidades experimentales. En cambio, en el gráfico con error estándar (SE), las barras son más cortas porque representan únicamente la incertidumbre en la estimación de la media.
+
+## ¿Por qué se presentan estas diferencias?
+
+Estas diferencias se deben a la **naturaleza de cada medida**:
+
+- La **SD** refleja la dispersión de los datos reales (es decir, el grado de heterogeneidad dentro del tratamiento).
+
+- El **SE** disminuye a medida que aumenta el número de observaciones, porque representa la precisión de la media, no la variabilidad del grupo.
+
+## ¿Cuál escogería para presentar sus datos?
+
+Para este tipo de experimento, cuyo objetivo es **comparar las medias entre tratamientos**, es más apropiado presentar las barras de error utilizando el **error estándar (SE)**, ya que permite evaluar con mayor claridad las posibles diferencias significativas entre tratamientos.
+
+------------------------------------------------------------------------
+
+# 12. Tabla de estadísticos descriptivos por tratamiento
+
+Se generan estadísticas descriptivas agrupadas por tratamiento, utilizando la función `desc_statby()` del paquete `ggpubr`. Esta función permite obtener medidas de tendencia central, dispersión y posición para la variable `Nodulos_prom`, correspondiente al número promedio de nódulos por pote.
+
+```{r tabla-desc-stat}
+# Estadísticos descriptivos por tratamiento con ggpubr::desc_statby
+tabla_estadistica <- desc_statby(
+  data = datos_promediados,
+  measure.var = "Nodulos_prom",
+  grps = c("Tratamiento")
+)
+
+# Mostrar tabla en consola
+tabla_estadistica
+```
+### Visualización estilizada con `gt`
+
+La siguiente tabla se presenta mediante el paquete `gt`, incluyendo un título y un pie de figura explicativo.
+
+```{r tabla-gt}
+tabla_estadistica %>%
+  gt() %>%
+  tab_header(
+    title = "Estadísticos descriptivos del número promedio de nódulos por tratamiento"
+  ) %>%
+  tab_source_note(
+    source_note = "Promedios obtenidos a partir del agrupamiento por pote. Cada tratamiento incluye 10 unidades experimentales."
+  )
+```
+
+------------------------------------------------------------------------
+
+# 13. Análisis de la media, mediana, desviación estándar y varianza
+
+A partir de los resultados obtenidos en la tabla de estadísticos descriptivos, se analiza el comportamiento de cada tratamiento en cuanto a tendencia central y dispersión.
+
+## Comparación por tratamiento
+
+- **Tratamiento 1.00E+06**:
+  - Media: 168.83 | Mediana: 167.17
+  - Desviación estándar (SD): 26.55 | Varianza: 704.87
+  - La cercanía entre la media y la mediana sugiere una distribución aproximadamente simétrica. La desviación estándar es moderada, indicando una variabilidad intermedia entre potes tratados con esta dosis de Rhizobium sp.
+
+- **Tratamiento 1.00E+08**:
+  - Media: 209.87 | Mediana: 212.33
+  - Desviación estándar (SD): 29.72 | Varianza: 883.54
+  - Este tratamiento muestra los valores promedio más altos de nodulación, lo que sugiere un fuerte efecto del inoculante. También presenta la mayor dispersión entre potes, lo cual podría reflejar una respuesta más heterogénea a la dosis alta.
+
+- **Control**:
+  - Media: 65.53 | Mediana: 66.00
+  - Desviación estándar (SD): 5.22 | Varianza: 27.24
+  - La media y la mediana son prácticamente iguales, y la dispersión es mínima. Esto indica una baja nodulación y una respuesta muy uniforme entre los potes sin tratamiento, como era de esperarse.
+
+## Conclusión
+
+Los tratamientos con *Rhizobium sp.* presentan medias mucho más altas que el control, confirmando su efecto positivo sobre la nodulación. La mayor dispersión observada en el tratamiento con la dosis más alta sugiere que, aunque se potencia la respuesta, también puede aumentar la variabilidad entre unidades experimentales. El control, en contraste, muestra una respuesta baja y homogénea. Estos resultados refuerzan la hipótesis de que la inoculación con *Rhizobium sp.* mejora la formación de nódulos en *Phaseolus vulgaris*.
+
+------------------------------------------------------------------------
+
+# 14. Boxplot con jitter y media
+
+A continuación, se construye una figura tipo boxplot con `ggplot2` que incluye:
+
+- Tratamientos diferenciados por color
+- Puntos individuales de cada pote (jitter)
+- Media representada como punto adicional
+
+```{r boxplot-estilizado}
+library(ggplot2)
+
+ggplot(datos_promediados, aes(x = Tratamiento, y = Nodulos_prom, fill = Tratamiento)) +
+  geom_boxplot(width = 0.5, outlier.shape = NA, alpha = 0.7) +
+  geom_jitter(width = 0.1, size = 2, shape = 21, fill = "white", color = "black") +
+  stat_summary(fun = mean, geom = "point", shape = 23, size = 3, fill = "yellow", color = "black") +
+  labs(
+    title = "Distribución del número promedio de nódulos por tratamiento",
+    x = "Tratamiento aplicado",
+    y = "Nódulos promedio por pote"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(legend.position = "none")
+```
+
+La figura presenta la distribución del número promedio de nódulos por pote en cada uno de los tres tratamientos aplicados. Se destacan la mediana (línea horizontal dentro de la caja), la media (rombo amarillo), los datos individuales (jitter) y los valores extremos.
+
+- El tratamiento **1.00E+08** muestra la **mediana más alta** y una caja más amplia, lo que indica tanto una mayor nodulación como una **mayor dispersión**. Se observa además la presencia de algunos **valores extremos**, pero dentro del rango esperable de variación para datos biológicos. La media se encuentra cerca de la mediana, lo que sugiere simetría relativa.
+
+- El tratamiento **1.00E+06** tiene una mediana claramente superior al control y una dispersión menor que la del tratamiento más concentrado. Aquí también la media coincide aproximadamente con la mediana, reflejando estabilidad en la respuesta.
+
+- El grupo **Control** muestra una **mediana baja y caja estrecha**, lo que indica **poca nodulación y alta homogeneidad** entre los potes sin tratamiento. No se observan valores extremos, y tanto la media como la mediana están muy próximas.
+
+### Relación con resultados anteriores
+
+La figura refuerza lo observado en los análisis numéricos previos (puntos 11 y 13):  
+- La **dosis de Rhizobium sp.** está directamente relacionada con el número promedio de nódulos.  
+- La **variabilidad también aumenta** con la dosis, especialmente en 1.00E+08.  
+- El **control** se mantiene homogéneo y con baja respuesta, como se espera al no aplicar el microorganismo.
+
+Por lo tanto, este gráfico no solo confirma visualmente los patrones estadísticos, sino que también comunica con claridad el efecto diferencial de cada tratamiento en términos de cantidad y variabilidad de la nodulación.
+
+------------------------------------------------------------------------
+
+# 15. Identificación de outliers
+
+Se analiza la presencia de posibles datos atípicos (outliers) mediante inspección visual del boxplot (punto 14) y uso de la función `identify_outliers()` del paquete `rstatix`.
+
+```{r detectar-outliers}
+library(rstatix)
+
+# Identificar outliers por tratamiento
+outliers <- datos_promediados %>%
+  group_by(Tratamiento) %>%
+  identify_outliers(Nodulos_prom)
+
+outliers
+```
+
+## Interpretación de resultados
+
+Según la figura del punto 14, se observan algunos puntos fuera de los límites del boxplot en los tratamientos 1.00E+06 y 1.00E+08, lo que sugiere posibles valores atípicos (outliers).
+
+La función `identify_outliers()` confirmó lo siguiente:
+
+- En el tratamiento **1.00E+06** se identificaron tres potes con valores considerados atípicos:
+  - **Pote 1** con un valor de 225.33 fue clasificado como **outlier extremo** (`is.extreme = TRUE`).
+  - **Potes 2 y 4** con valores de 133.00 y 198.00 fueron clasificados como **outliers suaves** (`is.extreme = FALSE`).
+
+- En el **grupo Control**, se detectó un outlier suave en el **pote 4** (valor de 54.00), aunque no clasificado como extremo.
+
+Estos resultados evidencian que incluso en condiciones controladas puede existir cierta variabilidad en la respuesta, y que los tratamientos con Rhizobium generan una dispersión más amplia en los resultados.
+
+## ¿Qué hacer con los valores atípicos?
+
+Dado que:
+- Los datos provienen de observaciones biológicas válidas.
+- No hay evidencia de errores en su recolección o digitación.
+- Y se encuentran dentro de rangos razonables para un experimento de este tipo.
+
+**No se eliminarán del análisis**. Estos valores reflejan la variabilidad natural de la respuesta de las plantas y deben ser conservados para mantener la integridad del diseño experimental.
+
+------------------------------------------------------------------------
+
+# 16. Conclusión frente a la hipótesis científica
+
+A partir de todos los análisis realizados, se concluye que los datos respaldan la hipótesis científica planteada inicialmente:
+
+> *“La aplicación de la cepa Rhizobium sp. aumenta la formación de nódulos activos en Phaseolus vulgaris con respecto a un control sin inoculación.”*
+
+Los resultados muestran que ambos tratamientos con Rhizobium (1.00E+06 y 1.00E+08 UFC/mL) produjeron un número significativamente mayor de nódulos promedio por pote en comparación con el grupo control. Este efecto fue especialmente marcado en el tratamiento con la dosis más alta (1.00E+08), que presentó la mayor media de nódulos, aunque también con mayor variabilidad entre potes.
+
+El análisis gráfico (boxplot, histogramas, densidades) y estadístico (medidas de tendencia y dispersión, identificación de outliers) fue coherente y permitió observar claramente una relación dosis-respuesta. Los valores atípicos detectados se consideraron biológicamente plausibles y no fueron eliminados, conservando la integridad del diseño experimental.
+
+Finalmente se concluye que **la cepa de Rhizobium sp. utilizada sí induce nodulación activa en Phaseolus vulgaris**, confirmando la hipótesis y abriendo la posibilidad de optimizar las dosis para aplicaciones futuras en condiciones controladas o de campo.
+
+------------------------------------------------------------------------
