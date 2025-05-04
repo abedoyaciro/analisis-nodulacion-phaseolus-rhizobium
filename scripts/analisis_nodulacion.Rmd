@@ -234,13 +234,16 @@ Para explorar cómo se distribuyen los valores promediados de nódulos por pote,
 
 ```{r}
 
-# Opciones para mostrar correctamente en el Word
+# Opciones para mostrar correctamente en el HTML
 knitr::opts_chunk$set(
-  fig.width = 6, 
-  fig.height = 4, 
-  dpi = 600,        # mejora la resolución
-  out.width = "80%"  # escala automática
+  fig.width = 7,  # Ancho de la imagen (ajusta según necesites)
+  fig.height = 5,  # Alto de la imagen
+  dpi = 300,  # Resolución adecuada para web (600 es más útil para impresión)
+  out.width = "100%",  # Asegura que la imagen se ajuste automáticamente
+  out.height = "auto",  # Mantiene la proporción de la imagen
+  fig.align = "center"  # Centra las imágenes en el HTML
 )
+
 
 ```
 
